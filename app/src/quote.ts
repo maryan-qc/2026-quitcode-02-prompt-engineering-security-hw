@@ -19,18 +19,38 @@ export interface QuoteInput {
 /** Ціна проєкту в центах з урахуванням знижки. */
 export function estimateTotalCents(input: QuoteInput): number {
   const { hours, rateCents, discountPercent = 0 } = input;
+  if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+    throw new RangeError(`discountPercent має бути в межах 0..100, отримано ${discountPercent}`);
+  }
   const gross = hours * rateCents;
   const discount = (gross * discountPercent) / 100;
   return Math.round(gross - discount);
 }
 
 /**
- * Розбити суму на `parts` рівних платежів (у центах).
- * Повертає масив довжиною `parts`.
+ * Розбити суму на `parts` платежів (у центах).
+ *
+ * Платежі рівні з точністю до однієї копійки: остача від ділення
+ * розподіляється по перших платежах, тому **сума масиву завжди дорівнює
+ * `totalCents`** — гроші не зникають і не створюються.
+ *
+ * @throws {RangeError} якщо `parts` не ціле число ≥ 1 або `totalCents` не ціле.
  */
 export function splitInstallments(totalCents: number, parts: number): number[] {
-  const each = Math.round(totalCents / parts);
-  return new Array(parts).fill(each);
+  if (!Number.isInteger(parts) || parts < 1) {
+    throw new RangeError(`parts має бути цілим числом ≥ 1, отримано ${parts}`);
+  }
+  if (!Number.isInteger(totalCents)) {
+    throw new RangeError(`totalCents має бути цілим числом центів, отримано ${totalCents}`);
+  }
+
+  const base = Math.trunc(totalCents / parts);
+  const remainder = totalCents - base * parts;
+  const step = Math.sign(remainder); // знак остачі збігається зі знаком суми
+  const extra = Math.abs(remainder); // завжди < parts, тож індекс не вийде за межі
+
+  // Перші `extra` платежів більші на одну копійку — так остача не зникає.
+  return Array.from({ length: parts }, (_, i) => (i < extra ? base + step : base));
 }
 
 /** Форматування центів у рядок на кшталт "$1,234.50". */
