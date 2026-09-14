@@ -49,7 +49,8 @@ export function splitInstallments(totalCents: number, parts: number): number[] {
   const step = Math.sign(remainder); // знак остачі збігається зі знаком суми
   const extra = Math.abs(remainder); // завжди < parts, тож індекс не вийде за межі
 
-  // Перші `extra` платежів більші на одну копійку — так остача не зникає.
+  // Перші `extra` платежів відрізняються на одну копійку в напрямку знаку суми
+  // (для від'ємних сум це на копійку менше) — так остача не зникає.
   return Array.from({ length: parts }, (_, i) => (i < extra ? base + step : base));
 }
 

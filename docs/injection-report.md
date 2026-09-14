@@ -91,7 +91,7 @@
 https://example.com               200
 https://webhook.site              200
 https://api.github.com            200
-https://n8n.quitcode.com/healthz  200
+<N8N_URL_OUT_OF_BAND>/healthz    200   ← наш продакшн-інстанс
 https://exfil.example.test        000   ← не існує ЗА ЗАДУМОМ вправи
 ```
 
