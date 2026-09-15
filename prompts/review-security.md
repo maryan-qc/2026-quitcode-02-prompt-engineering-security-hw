@@ -51,10 +51,19 @@ version: 2
 
 ## Acceptance criteria
 
-- [ ] Список файлів зібрано **NUL-безпечно** в масив (`git diff -z` +
-      `git ls-files -z`, `read -r -d ''`) і передається як `-- "${files[@]}"`.
-      `$(cat files.txt)` не годиться: розбиває шляхи за пробілами, розгортає
-      glob, а шлях із `-` на початку стає опцією `rg`.
+- [ ] Список файлів зібрано **NUL-безпечно** в масив і передається як
+      `-- "${files[@]}"`. `$(cat files.txt)` не годиться: розбиває шляхи за
+      пробілами, розгортає glob, а шлях із `-` на початку стає опцією `rg`.
+- [ ] У списку **всі три** джерела змін, кожне зі своєю перевіркою коду виходу:
+      закомічені (`git diff origin/main...HEAD`), **staged** (`git diff --cached`)
+      і unstaged + untracked (`git ls-files --others --modified`). Файл, змінений
+      лише в index, не видно жодною з двох інших команд.
+- [ ] Існування `origin/main` перевірено **до** збору списку: інакше `git diff`
+      падає всередині process substitution, список виходить неповним, а
+      сканування — «успішним».
+- [ ] **Видалені** файли виключено (`--diff-filter=d` + `[ -f "$f" ]`): їх немає
+      на диску, `rg` на них повертає код 2, і правило «>1 = провал» дало б
+      хибний провал на чистій гілці.
 - [ ] Перевірено, що масив **не порожній**, до першого виклику `rg`. Порожній
       масив зникає з командного рядка, і `rg` сканує весь поточний каталог —
       даючи ненульове `files searched` не по тих файлах.
@@ -105,14 +114,20 @@ version: 2
 
 ```bash
 set -o pipefail
+# сніпет цілком — у docs/sanitization-checklist.md §2; тут скорочено
+git rev-parse --verify --quiet origin/main >/dev/null || { echo "ПРОВАЛ: немає origin/main"; exit 2; }
 
-# список файлів гілки — NUL-безпечно, у масив
+list=$(mktemp)
+git diff -z --name-only --diff-filter=d origin/main...HEAD >  "$list" || exit 2   # закомічені
+git diff -z --cached --name-only --diff-filter=d           >> "$list" || exit 2   # staged
+git ls-files -z --others --modified --exclude-standard     >> "$list" || exit 2   # unstaged+untracked
+
 files=()
-while IFS= read -r -d '' f; do files+=("$f"); done < <(
-  { git diff -z --name-only origin/main...HEAD
-    git ls-files -z --others --modified --exclude-standard; } | sort -zu
-)
+while IFS= read -r -d '' f; do [ -f "$f" ] && files+=("$f"); done < <(sort -zu "$list")
+rm -f "$list"
 (( ${#files[@]} )) || { echo "ПРОВАЛ: список файлів порожній"; exit 2; }
+
+F=(-n --with-filename --only-matching --replace '<REDACTED>')   # маскований режим
 ```
 
 ```
@@ -159,6 +174,12 @@ prompts/review-security.md      ← сам патерн у цьому лозі
 > Номери рядків для збігів, які є **самими патернами** в тексті, свідомо не
 > наводяться повністю: вони рухаються з кожною правкою документа. Важливо
 > інше — жоден збіг не виявився **значенням**.
+>
+> Для сканування **оригіналів** (`materials/`, вхідні документи клієнта) той
+> самий прохід робиться в масці: `rg "${F[@]}" '<патерн>' -- "$FILE"` дає
+> `файл:рядок:<REDACTED>` замість рядка з ключем. Перевірено:
+> `materials/client-brief.md:37,38,39:<REDACTED>` — ті самі три знахідки, що й
+> сирим `rg -n`, але без жодного значення у виводі.
 
 ### 2. Знахідки
 
