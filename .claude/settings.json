@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa*)",
+      "Read(**/credentials*)",
+      "Read(**/secrets*)",
+      "Read(**/*KEY*)",
+      "Read(**/*TOKEN*)",
+      "Read(**/*SECRET*)",
+      "Read(**/*PASSWORD*)",
+      "Read(~/.claude.json)",
+      "Read(~/.claude/settings.json)",
+      "Read(~/.aws/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.config/gh/**)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(nc *)",
+      "Bash(ncat *)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(env)",
+      "Bash(printenv)",
+      "Bash(printenv *)",
+      "Edit(./materials/**)",
+      "Edit(./.coderabbit.yaml)",
+      "Edit(./.github/**)"
+    ],
+    "ask": [
+      "WebFetch",
+      "Bash(git push *)",
+      "Bash(gh *)"
+    ]
+  }
+}
